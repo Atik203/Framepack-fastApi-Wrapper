@@ -27,7 +27,7 @@ async def generate(
 
     shutil.copyfile(input_path, output_path)
 
-    return JSONResponse({"output_path": str(output_path)})
+    return JSONResponse({"output_path": str(output_path), "prompt": prompt or ""})
 
 
 if __name__ == "__main__":
