@@ -1,6 +1,7 @@
 hf_download/
 outputs/
 repo/
+.venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
