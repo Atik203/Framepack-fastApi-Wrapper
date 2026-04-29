@@ -133,7 +133,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/
@@ -177,3 +176,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+config.bat
+node_modules
