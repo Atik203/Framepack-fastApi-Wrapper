@@ -13,6 +13,27 @@ app = FastAPI()
 logger = logging.getLogger("framepack_api")
 
 
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return int(value)
+
+
+def _env_float(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return float(value)
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @app.post("/generate")
 async def generate(
     file: UploadFile = File(...),
@@ -45,6 +66,27 @@ async def generate(
 
         from demo_gradio_f1 import process
 
+        latent_window_size = _env_int("FRAMEPACK_LATENT_WINDOW_SIZE", 9)
+        steps = _env_int("FRAMEPACK_STEPS", 12)
+        cfg_scale = _env_float("FRAMEPACK_CFG", 1.0)
+        distilled_cfg_scale = _env_float("FRAMEPACK_DISTILLED_CFG", 8.0)
+        cfg_rescale = _env_float("FRAMEPACK_CFG_RESCALE", 0.0)
+        gpu_memory_preservation = _env_float("FRAMEPACK_GPU_MEMORY_PRESERVATION", 6.0)
+        use_teacache = _env_bool("FRAMEPACK_USE_TEACACHE", True)
+        mp4_crf = _env_int("FRAMEPACK_MP4_CRF", 20)
+
+        logger.info(
+            "Generation config latent_window=%s steps=%s cfg=%s distilled_cfg=%s cfg_rescale=%s preserved_mem=%s use_teacache=%s mp4_crf=%s",
+            latent_window_size,
+            steps,
+            cfg_scale,
+            distilled_cfg_scale,
+            cfg_rescale,
+            gpu_memory_preservation,
+            use_teacache,
+            mp4_crf,
+        )
+
         output_filename = None
         for update in process(
             input_image,
@@ -52,14 +94,14 @@ async def generate(
             "",
             31337,
             total_seconds,
-            9,
-            25,
-            1.0,
-            10.0,
-            0.0,
-            6,
-            True,
-            16,
+            latent_window_size,
+            steps,
+            cfg_scale,
+            distilled_cfg_scale,
+            cfg_rescale,
+            gpu_memory_preservation,
+            use_teacache,
+            mp4_crf,
         ):
             if update and update[0]:
                 output_filename = update[0]

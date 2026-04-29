@@ -78,11 +78,23 @@ args, _unknown_args = parser.parse_known_args()
 
 print(args)
 
+
+def env_flag(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
 free_mem_gb = get_cuda_free_memory_gb(gpu)
 high_vram = free_mem_gb > 60
 
 print(f"Free VRAM {free_mem_gb} GB")
 print(f"High-VRAM Mode: {high_vram}")
+
+DEFAULT_BUCKET_RESOLUTION = int(os.getenv("FRAMEPACK_BUCKET_RESOLUTION", "512"))
+HIGH_QUALITY_FP32 = env_flag("FRAMEPACK_HIGH_QUALITY_FP32", False)
+print(f"FramePack bucket resolution: {DEFAULT_BUCKET_RESOLUTION}")
+print(f"FramePack high quality fp32 output: {HIGH_QUALITY_FP32}")
 
 text_encoder = LlamaModel.from_pretrained(
     "hunyuanvideo-community/HunyuanVideo",
@@ -125,8 +137,11 @@ if not high_vram:
     vae.enable_slicing()
     vae.enable_tiling()
 
-transformer.high_quality_fp32_output_for_inference = True
-print("transformer.high_quality_fp32_output_for_inference = True")
+transformer.high_quality_fp32_output_for_inference = HIGH_QUALITY_FP32
+print(
+    "transformer.high_quality_fp32_output_for_inference = "
+    f"{transformer.high_quality_fp32_output_for_inference}"
+)
 
 transformer.to(dtype=torch.bfloat16)
 vae.to(dtype=torch.float16)
@@ -226,7 +241,7 @@ def worker(
         )
 
         H, W, C = input_image.shape
-        height, width = find_nearest_bucket(H, W, resolution=640)
+        height, width = find_nearest_bucket(H, W, resolution=DEFAULT_BUCKET_RESOLUTION)
         input_image_np = resize_and_center_crop(
             input_image, target_width=width, target_height=height
         )
